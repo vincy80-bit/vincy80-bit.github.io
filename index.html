@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZenMatrix - Eisenhower Matrix Task Manager</title>
+  <meta name="description" content="ZenMatrix is a premium Eisenhower Matrix Task Manager with smooth drag-and-drop, hashtag auto-categorization, and seamless Google Tasks integration.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="google-site-verification" content="yTyYW0vjZAvn_8S7VuZRsLhQ-zV_3Up-XUnq4Gfu49U" />
+  <!-- Load Google Identity Services SDK for Google OAuth -->
+  <script src="https://accounts.google.com/gsi/client" defer></script>
+</head>
+<body>
+
+  <!-- Floating Glassmorphic Header -->
+  <header>
+    <div class="logo-section">
+      <div class="logo-icon">Z</div>
+      <h1>ZenMatrix</h1>
+      <span class="badge-status" id="connection-status" title="Connection status">Offline Mode</span>
+    </div>
+    
+    <div class="header-controls">
+      <!-- Sync State Indicator -->
+      <div id="sync-spinner" style="display: none; align-items: center; justify-content: center;" title="Syncing tasks offline...">
+        <svg class="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24" style="animation: spin 1s linear infinite; margin-right: 0.5rem; color: var(--accent);">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity: 0.25;"></circle>
+          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" style="opacity: 0.75;"></path>
+        </svg>
+      </div>
+
+      <!-- Theme Switcher -->
+      <button class="btn btn-icon" id="theme-toggle-btn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+        <svg id="theme-dark-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"></path>
+        </svg>
+        <svg id="theme-light-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display: none;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m0 13.5V21M4.93 4.93l1.59 1.59m10.96 10.96l1.59 1.59M3 12h2.25m13.5 0H21m-2.23-7.07l-1.59 1.59m-10.96 10.96l-1.59 1.59M12 7.5a4.5 4.5 0 110 9 4.5 4.5 0 010-9z"></path>
+        </svg>
+      </button>
+
+      <!-- Sync Center Button -->
+      <button class="btn" id="sync-center-btn" title="Sync & Backup Center">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3M3 12c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M3 12l-3 3m3-3l3 3"></path>
+        </svg>
+        <span>Sync Center</span>
+      </button>
+
+      <!-- Inbox Toggle -->
+      <button class="btn" id="inbox-toggle-btn" title="View Uncategorized Tasks Drawer">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"></path>
+        </svg>
+        <span>Inbox</span>
+        <span class="task-count" id="inbox-count" style="display: none;">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- App Main Area -->
+  <div class="app-container">
+    
+    <main class="main-content">
+      
+      <!-- Quick Input Bar -->
+      <section class="global-add-section">
+        <div class="input-container">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
+          </svg>
+          <input type="text" class="input-text" id="global-add-input" placeholder="Create a new task... Type #do, #schedule, #delegate, #eliminate or #q1 to categorize automatically" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="global-add-btn">Add Task</button>
+      </section>
+
+      <!-- Eisenhower 2x2 Matrix -->
+      <section class="matrix-grid">
+        
+        <!-- Q1: DO (Urgent & Important) -->
+        <div class="quadrant quadrant-q1" id="quadrant-q1" data-quadrant="Q1">
+          <div class="quadrant-header">
+            <div class="quadrant-title-area">
+              <span class="quadrant-badge">Quadrant I</span>
+              <h2 class="quadrant-title">DO (Urgent & Important)</h2>
+            </div>
+            <span class="task-count" id="count-q1">0</span>
+          </div>
+          <div class="task-list" id="list-q1" data-quadrant="Q1">
+            <!-- Dynamic task items go here -->
+          </div>
+        </div>
+
+        <!-- Q2: SCHEDULE (Important, Not Urgent) -->
+        <div class="quadrant quadrant-q2" id="quadrant-q2" data-quadrant="Q2">
+          <div class="quadrant-header">
+            <div class="quadrant-title-area">
+              <span class="quadrant-badge">Quadrant II</span>
+              <h2 class="quadrant-title">SCHEDULE (Important, Not Urgent)</h2>
+            </div>
+            <span class="task-count" id="count-q2">0</span>
+          </div>
+          <div class="task-list" id="list-q2" data-quadrant="Q2">
+            <!-- Dynamic task items go here -->
+          </div>
+        </div>
+
+        <!-- Q3: DELEGATE (Urgent, Not Important) -->
+        <div class="quadrant quadrant-q3" id="quadrant-q3" data-quadrant="Q3">
+          <div class="quadrant-header">
+            <div class="quadrant-title-area">
+              <span class="quadrant-badge">Quadrant III</span>
+              <h2 class="quadrant-title">DELEGATE (Urgent, Not Important)</h2>
+            </div>
+            <span class="task-count" id="count-q3">0</span>
+          </div>
+          <div class="task-list" id="list-q3" data-quadrant="Q3">
+            <!-- Dynamic task items go here -->
+          </div>
+        </div>
+
+        <!-- Q4: ELIMINATE (Not Urgent, Not Important) -->
+        <div class="quadrant quadrant-q4" id="quadrant-q4" data-quadrant="Q4">
+          <div class="quadrant-header">
+            <div class="quadrant-title-area">
+              <span class="quadrant-badge">Quadrant IV</span>
+              <h2 class="quadrant-title">ELIMINATE (Not Urgent, Not Important)</h2>
+            </div>
+            <span class="task-count" id="count-q4">0</span>
+          </div>
+          <div class="task-list" id="list-q4" data-quadrant="Q4">
+            <!-- Dynamic task items go here -->
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Collapsible Sidebar: Inbox Drawer (Uncategorized Google Tasks) -->
+    <aside class="sidebar" id="inbox-sidebar">
+      <div class="sidebar-header">
+        <h3 class="sidebar-title">Uncategorized Inbox</h3>
+        <button class="btn btn-icon task-btn" id="inbox-close-btn" aria-label="Close Inbox">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="sidebar-content">
+        <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.75rem;">
+          These tasks do not have Eisenhower hashtags. Drag them into any matrix quadrant to assign a quadrant tag.
+        </p>
+        <div class="sidebar-inbox-list" id="inbox-task-list" data-quadrant="INBOX">
+          <!-- Uncategorized tasks here -->
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Background Overlay for Modal / Sidebar -->
+  <div class="overlay" id="app-overlay"></div>
+
+  <!-- Sync & Backup Center Modal -->
+  <div class="modal" id="sync-modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Sync & Backup Center</h3>
+      <button class="btn btn-icon task-btn modal-close-btn" aria-label="Close Sync Modal">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="modal-tabs">
+      <button class="tab-btn active" data-tab="tab-google">Google Sync</button>
+      <button class="tab-btn" data-tab="tab-wifi">Wi-Fi Sync</button>
+      <button class="tab-btn" data-tab="tab-qr">QR Share</button>
+      <button class="tab-btn" data-tab="tab-file">File Backup</button>
+    </div>
+
+    <div class="modal-body" style="margin-top: 1rem;">
+      
+      <!-- Tab 1: Google Sync -->
+      <div class="tab-content active" id="tab-google">
+        <div class="form-group">
+          <label for="google-client-id">Google Client ID</label>
+          <input type="text" class="form-control" id="google-client-id" placeholder="123456789-abcdefg.apps.googleusercontent.com">
+        </div>
+        
+        <div class="form-group" id="google-tasklist-group" style="display: none; margin-top: 0.75rem;">
+          <label for="google-tasklist-select">Active Google Task List</label>
+          <select class="form-control" id="google-tasklist-select">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        
+        <div class="info-alert" style="margin-top: 0.75rem;">
+          <strong>Google Tasks Setup Instructions:</strong>
+          <ol>
+            <li>Go to the <a href="https://console.cloud.google.com/" target="_blank" style="color: var(--accent); text-decoration: underline;">Google Cloud Console</a> and enable the <strong>Google Tasks API</strong>.</li>
+            <li>Create an <strong>OAuth Client ID</strong> (Web Application).</li>
+            <li>Add <code>http://localhost:8000</code> (or your hosted PWA URL) to **Authorized JavaScript origins**.</li>
+            <li>Copy your Client ID, paste it above, click **Connect Google**, and grant Tasks authorization!</li>
+          </ol>
+        </div>
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+          <button class="btn" id="disconnect-google-btn" style="display: none; border-color: var(--q1-color); color: var(--q1-color); flex: 1;">Disconnect Google</button>
+          <button class="btn btn-primary" id="google-login-btn" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#ffffff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#ffffff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#ffffff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z"/>
+              <path fill="#ffffff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span>Connect Google</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tab 2: Wi-Fi Sync -->
+      <div class="tab-content" id="tab-wifi" style="display: none;">
+        <div class="form-group">
+          <label for="sync-server-ip">Sync Server IP</label>
+          <input type="text" class="form-control" id="sync-server-ip" placeholder="http://192.168.1.50:3000">
+        </div>
+        <div class="form-group">
+          <label for="sync-key">Sync Key</label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" class="form-control" id="sync-key" placeholder="Enter key (e.g. Z-8B3E9)">
+            <button class="btn" id="generate-key-btn" style="white-space: nowrap;">Generate</button>
+          </div>
+        </div>
+        
+        <div class="info-alert" style="margin-top: 0.5rem;">
+          <strong>Wi-Fi Sync Instructions:</strong>
+          <ol>
+            <li>Run <code>node sync-server.js</code> on your computer.</li>
+            <li>Find your computer's local IP address (e.g. <code>192.168.1.50</code>).</li>
+            <li>Enter <code>http://&lt;IP&gt;:3000</code> in the Server IP input above.</li>
+            <li>Generate a Sync Key, then click <strong>Sync Now</strong>! Use the same Key on your phone to instantly sync both devices over local Wi-Fi.</li>
+          </ol>
+        </div>
+        
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+          <button class="btn" id="test-connection-btn" style="flex: 1;">Test Server</button>
+          <button class="btn btn-primary" id="wifi-sync-now-btn" style="flex: 1;">Sync Now</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: QR Share -->
+      <div class="tab-content" id="tab-qr" style="display: none; align-items: center; flex-direction: column; gap: 1rem; text-align: center;">
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          Scan this QR code with another device's camera to instantly import your tasks.
+        </p>
+        
+        <div id="qr-code-container" style="background: white; padding: 1rem; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; min-height: 200px; min-width: 200px; border: 1px solid var(--border-color);">
+          <div style="color: #64748b; font-size: 0.85rem;" id="qr-placeholder">No QR Code Generated</div>
+          <img id="qr-code-img" style="display: none; max-width: 200px; max-height: 200px;" alt="ZenMatrix Sync QR Code">
+        </div>
+        
+        <button class="btn btn-primary" id="generate-qr-btn" style="width: 100%;">Generate Share QR Code</button>
+      </div>
+
+      <!-- Tab 3: File Backup -->
+      <div class="tab-content" id="tab-file" style="display: none; flex-direction: column; gap: 1rem;">
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          Export your complete database as a backup file, or restore tasks from a previously saved JSON file.
+        </p>
+        
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <button class="btn" id="export-backup-btn" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path>
+            </svg>
+            <span>Export ZenMatrix Backup</span>
+          </button>
+          
+          <div style="border: 2px dashed var(--border-color); padding: 1.5rem; border-radius: var(--radius-md); text-align: center; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(0,0,0,0.08);">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="color: var(--text-muted);">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path>
+            </svg>
+            <span style="font-size: 0.85rem; color: var(--text-primary);">Restore Backup File</span>
+            <input type="file" id="import-backup-file" accept=".json" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Click to browse `.json` file</span>
+          </div>
+        </div>
+        
+        <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+          <button class="btn" id="wipe-local-btn" style="width: 100%; border-color: var(--q1-color); color: var(--q1-color);">Wipe All Local Tasks</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Task Details / Edit Modal -->
+  <div class="modal" id="task-edit-modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="edit-modal-headline">Edit Task</h3>
+      <button class="btn btn-icon task-btn modal-close-btn" aria-label="Close Edit">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-task-id">
+      
+      <div class="form-group">
+        <label for="edit-task-title">Task Title</label>
+        <input type="text" class="form-control" id="edit-task-title" required placeholder="What needs to be done?">
+      </div>
+
+      <div class="form-group">
+        <label for="edit-task-notes">Notes / Details</label>
+        <textarea class="form-control" id="edit-task-notes" placeholder="Add descriptions, checklists, or comments..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-task-quadrant">Eisenhower Quadrant</label>
+        <select class="form-control" id="edit-task-quadrant">
+          <option value="INBOX">Inbox (Unassigned)</option>
+          <option value="Q1">Q1: DO (Urgent & Important)</option>
+          <option value="Q2">Q2: SCHEDULE (Important, Not Urgent)</option>
+          <option value="Q3">Q3: DELEGATE (Urgent, Not Important)</option>
+          <option value="Q4">Q4: ELIMINATE (Not Urgent, Not Important)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="edit-task-due">Due Date</label>
+        <input type="date" class="form-control" id="edit-task-due">
+      </div>
+
+    </div>
+    <div class="modal-footer" style="justify-content: space-between;">
+      <button class="btn" id="delete-task-btn" style="border-color: var(--q1-color); color: var(--q1-color);">Delete Task</button>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn modal-close-btn" id="cancel-edit-btn">Cancel</button>
+        <button class="btn" id="save-task-btn" style="background: var(--accent); color: white; border-color: transparent;">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
